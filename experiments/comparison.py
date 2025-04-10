@@ -6,8 +6,8 @@ from skpsl.preprocessing import MinEntropyBinarizer
 
 if __name__ == '__main__':
     df = pd.read_csv("../data/player_binary.csv", index_col=0)
-    X = df.iloc[:,:-1].values
-    y = df.iloc[:].index.values
+    X = df.iloc.values
+    y = df.iloc.index.values
 
     X = MinEntropyBinarizer().fit_transform(X, y)
     classes_ = np.unique(y)
