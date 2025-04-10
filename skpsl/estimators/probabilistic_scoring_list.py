@@ -1,4 +1,5 @@
 import logging
+import time
 from collections import defaultdict
 from itertools import permutations, product, chain
 from typing import Optional
@@ -59,6 +60,7 @@ class ProbabilisticScoringList(BaseEstimator, ClassifierMixin):
         self.classes_ = None
         assert self.score_set_.size > 0
         self.stage_clfs = None  # type: Optional[list[ProbabilisticScoringSystem]]
+        self.time = None
 
     def fit(
         self,
@@ -78,6 +80,7 @@ class ProbabilisticScoringList(BaseEstimator, ClassifierMixin):
         :param predef_scores:
         :return: The fitted classifier
         """
+        start = time.time()
         X, y = np.array(X), np.array(y)
         predef_features = predef_features or []
         predef_scores = predef_scores or []
@@ -148,6 +151,7 @@ class ProbabilisticScoringList(BaseEstimator, ClassifierMixin):
                 )
             )
             stage += 1
+        self.time = time.time() - start
         return self
 
     def _fit_and_store_clf_at_k(self, X, y, sample_weight=None, f=None, s=None, t=None):
