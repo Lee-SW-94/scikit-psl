@@ -35,7 +35,7 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
         self.data = []
 
 
-    def fit(
+    def fit_ox4(
         self,
         X,
         y,
@@ -43,8 +43,7 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
         sample_weight=None,
         predef_features: Optional[np.ndarray] = None,
         predef_scores: Optional[np.ndarray] = None,
-        strict=True,
-        crossover_ox4=True
+        strict=True
     ) -> "ProbabilisticScoringList":
         start_time = time.time()
 
@@ -161,9 +160,9 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
                             off_score2[i] = scores[idx_min]
 
 
-                assert (off_order1[i] in range(number_features) for i in range(number_features)) and len(off_order1) == number_features
+                assert (off_order1[i] in range(number_features) for i in range(number_features)) and len(np.unique(off_order1)) == number_features
                 assert (off_score1[i] in scores for i in range(number_features)) and len(off_score1) == number_features
-                assert (off_order2[i] in range(number_features) for i in range(number_features)) and len(off_order2) == number_features
+                assert (off_order2[i] in range(number_features) for i in range(number_features)) and len(np.unique(off_order2)) == number_features
                 assert (off_score2[i] in scores for i in range(number_features)) and len(off_score2) == number_features
 
                 off_score1 = list(off_score1)
@@ -175,82 +174,6 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
             offspring = [off[i] for i in rand]
             return np.array(offspring)
 
-        def ox(parents, offspring_size, ga_instance):
-            off=[]
-
-            for a, b in permutations(range(parents.shape[0]),2):
-                order1, score1 = parents[a, :number_features].copy(), parents[a, number_features:].copy()
-                order2, score2 = parents[b, :number_features].copy(), parents[b, number_features:].copy()
-
-
-                # order-crossover (ox)
-                random_split_point1 = np.random.choice(range(1, number_features), size=2, replace=False)
-                random_split_point1.sort()
-                random_split_point2 = np.random.choice(range(1, number_features), size=2, replace=False)
-                random_split_point2.sort()
-
-                off_order1 = [None]*number_features
-                off_order2 = [None]*number_features
-
-                inherit1 = list(order1[random_split_point1[0]:random_split_point1[1]])
-                remaining_elements1 = [x for x in order2 if x not in inherit1]
-
-                off_order1[random_split_point1[0]:random_split_point1[1]] = inherit1
-                off_order1[:random_split_point1[0]] = remaining_elements1[:random_split_point1[0]]
-                off_order1[random_split_point1[1]:] = remaining_elements1[len(remaining_elements1) - random_split_point1[0]:]
-
-                inherit2 = list(order2[random_split_point1[0]:random_split_point2[1]])
-                remaining_elements2 = [x for x in order1 if x not in inherit2]
-
-                off_order2[random_split_point2[0]:random_split_point2[1]] = inherit2
-                off_order2[:random_split_point2[0]] = remaining_elements2[:random_split_point2[0]]
-                off_order2[random_split_point2[1]:] = remaining_elements2[len(remaining_elements2) - random_split_point2[0]:]
-
-
-                # score-crossover
-                beta = random.uniform(low=-0.25, high=1.25)
-
-                off_score1 = ((score1 * beta) + (score2 * (1 - beta))).astype(float)
-                off_score1 = ndarray.round(off_score1, 0).astype(int)
-                for i in range(number_features):
-                    if off_score1[i] not in scores:
-                        if off_score1[i] < scores[0]:
-                            off_score1[i] = scores[0]
-                        elif off_score1[i] > scores[-1]:
-                            off_score1[i] = scores[-1]
-                        elif scores[0] < off_score1[i] < scores[-1]:
-                            idx_min = np.argmin(abs(scores - off_score1[i]))
-                            off_score1[i] = scores[idx_min]
-
-                off_score2 = ((score2 * beta) + (score1 * (1 - beta))).astype(float)
-                off_score2 = ndarray.round(off_score2, 0).astype(int)
-                for i in range(number_features):
-                    if off_score2[i] not in scores:
-                        if off_score2[i] < scores[0]:
-                            off_score2[i] = scores[0]
-                        elif off_score2[i] > scores[-1]:
-                            off_score2[i] = scores[-1]
-                        elif scores[0] < off_score2[i] < scores[-1]:
-                            idx_min = np.argmin(abs(scores - off_score1[i]))
-                            off_score2[i] = scores[idx_min]
-
-                assert (off_order1[i] in range(number_features) for i in range(number_features)) and len(
-                    off_order1) == number_features
-                assert (off_score1[i] in scores for i in range(number_features)) and len(off_score1) == number_features
-                assert (off_order2[i] in range(number_features) for i in range(number_features)) and len(
-                    off_order2) == number_features
-                assert (off_score2[i] in scores for i in range(number_features)) and len(off_score2) == number_features
-
-                off_score1 = list(off_score1)
-                off_score2 = list(off_score2)
-                off.append(off_order1 + off_score1)
-                off.append(off_order2 + off_score2)
-
-            rand = np.random.choice(range(len(off)), size=offspring_size[0], replace=False)
-            offspring = [off[i] for i in rand]
-            return np.array(offspring)
-
-
         def mutate(offspring, ga_instance):
             #swap 2 elements
             order = offspring[:, :number_features]
@@ -258,18 +181,19 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
 
             mutated = []
             for i in range(offspring.shape[0]):
+                off_order = order[i]
+                off_score = score[i]
+
                 if random.random() < ga_instance.mutation_probability:
-                    # order mutate
-                    off_order = order[i]
+                    # order mutate - swap
                     swap_idx = np.random.choice(range(number_features), size=2, replace=False)
                     off_order[swap_idx[0]], off_order[swap_idx[1]] = off_order[swap_idx[1]], off_order[swap_idx[0]]
 
-                    # score mutate
-                    off_score = score[i]
+                    # score mutate - swap
                     swap_idx = np.random.choice(range(number_features), size=2, replace=False)
                     off_score[swap_idx[0]], off_score[swap_idx[1]] = off_score[swap_idx[1]], off_score[swap_idx[0]]
 
-                mutated.append(order[i].tolist()+score[i].tolist())
+                mutated.append(list(off_order)+list(off_score))
             return np.array(mutated)
 
         def on_generation(ga_instance):
@@ -288,7 +212,7 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
             num_genes=2*number_features,
             parent_selection_type="rws",
             keep_elitism=2,
-            crossover_type=ox4 if crossover_ox4 else ox,
+            crossover_type=ox4,
             mutation_type=mutate,
             mutation_probability=0.05,
             on_generation=on_generation,
@@ -305,11 +229,186 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
         for i in range(number_features + 1):
             order_i = sol_order[:i]
 
-            sorted_data = X[:, order_i]
             sorted_scores = sol_score[order_i]
             score_i = sorted_scores[:i]
-            total = GeneticProbabilisticScoringList.compute_total_score(sorted_data, score_i)
-            self.calibrator = self.calibrator.fit(total, y_)
+
+            k_clf = ProbabilisticScoringSystem(
+                features=list(order_i),
+                scores=list(score_i),
+                initial_feature_thresholds=None,
+                **self.stage_clf_params_,
+            ).fit(X, y)
+            self.stage_clfs.append(k_clf)
+
+        return self
+
+    def fit_ox(
+        self,
+        X,
+        y,
+        given_solution = None,
+        sample_weight=None,
+        predef_features: Optional[np.ndarray] = None,
+        predef_scores: Optional[np.ndarray] = None,
+        strict=True
+    ) -> "ProbabilisticScoringList":
+        start_time = time.time()
+
+        number_features = int(X.shape[1]) # Number of Features
+        X = np.array(X)
+
+        self.classes_ = np.unique(y)
+        y_ = np.array(y == self.classes_[1], dtype=int)
+
+        feature_order = list(range(number_features))
+        scores = list(self.score_set)
+        scores.sort()
+
+        self.calibrator = IsotonicRegression(
+            y_min=0.0, y_max=1.0, increasing=True, out_of_bounds="clip"
+        )
+
+        data = []
+
+        def initialize(sol_per_pop=10):
+            init=[]
+            if given_solution is not None:
+                sol_per_pop = sol_per_pop - 1
+                init.append(given_solution)
+
+            for _ in range(sol_per_pop):
+                init_feature_order = list(np.random.permutation(feature_order))
+                init_scores = list(np.random.choice(scores, size=number_features, replace=True))
+
+                init.append(init_feature_order+init_scores)
+
+            return init
+
+        def fitness(ga_instance, solution, solution_idx):
+            loss_value = []
+            order = np.array(solution[:number_features], dtype=int)
+            score = np.array(solution[number_features:], dtype=int)
+
+            sorted_data = X[:, order]
+            sorted_scores = list(score[order])
+
+            for i in range(number_features + 1):
+                total = GeneticProbabilisticScoringList.compute_total_score(sorted_data[:,:i], sorted_scores[:i])
+                if i == 0:
+                    total = np.zeros((X.shape[0], 1))
+                self.calibrator = self.calibrator.fit(total, y_)
+
+                y_prob = self.predict_prob(total)
+
+                loss_value.append(log_loss(y_, y_prob[:, 1]))
+                #loss_value.append(brier_score_loss(y_, y_prob[:, 1]))
+            return 1/sum(loss_value)
+
+        def ox(parents, offspring_size, ga_instance):
+            off=[]
+
+            for a, b in permutations(range(parents.shape[0]),2):
+                order1, score1 = parents[a, :number_features].copy(), parents[a, number_features:].copy()
+                order2, score2 = parents[b, :number_features].copy(), parents[b, number_features:].copy()
+
+
+                # order-crossover (ox)
+                random_split_point = np.random.choice(range(1, number_features), size=2, replace=False)
+                random_split_point.sort()
+
+
+                off_order1 = [None]*number_features
+                off_order2 = [None]*number_features
+
+                inherit1 = list(order1[random_split_point[0]:random_split_point[1]])
+                remaining_elements1 = [x for x in order2 if x not in inherit1]
+
+                off_order1[random_split_point[0]:random_split_point[1]] = inherit1
+                off_order1[:random_split_point[0]] = remaining_elements1[:random_split_point[0]]
+                off_order1[random_split_point[1]:] = remaining_elements1[random_split_point[0]:]
+
+                inherit2 = list(order2[random_split_point[0]:random_split_point[1]])
+                remaining_elements2 = [x for x in order1 if x not in inherit2]
+
+                off_order2[random_split_point[0]:random_split_point[1]] = inherit2
+                off_order2[:random_split_point[0]] = remaining_elements2[:random_split_point[0]]
+                off_order2[random_split_point[1]:] = remaining_elements2[random_split_point[0]:]
+
+
+                # score-crossover (single point crossover)
+                cross_point1 = np.random.choice(range(1, number_features))
+                cross_point2 = np.random.choice(range(1, number_features))
+
+                off_score1 = list(score1[:cross_point1]) + list(score2[cross_point1:])
+                off_score2 = list(score2[:cross_point2]) + list(score1[cross_point2:])
+
+                assert (off_order1[i] in range(number_features) for i in range(number_features)) and len(np.unique(off_order1)) == number_features
+                assert (off_score1[i] in scores for i in range(number_features)) and len(off_score1) == number_features
+                assert (off_order2[i] in range(number_features) for i in range(number_features)) and len(np.unique(off_order2)) == number_features
+                assert (off_score2[i] in scores for i in range(number_features)) and len(off_score2) == number_features
+
+                off.append(list(off_order1) + list(off_score1))
+                off.append(list(off_order2) + list(off_score2))
+
+            rand = np.random.choice(range(len(off)), size=offspring_size[0], replace=False)
+            offspring = [off[i] for i in rand]
+            return np.array(offspring)
+
+        def mutate(offspring, ga_instance):
+            order = offspring[:, :number_features]
+            score = offspring[:, number_features:]
+
+            mutated = []
+            for i in range(offspring.shape[0]):
+                off_order = order[i]
+                off_score = score[i]
+
+                if random.random() < ga_instance.mutation_probability:
+                    # order mutate - swap
+                    swap_idx = np.random.choice(range(number_features), size=2, replace=False)
+                    off_order[swap_idx[0]], off_order[swap_idx[1]] = off_order[swap_idx[1]], off_order[swap_idx[0]]
+
+                    # score mutate - replace
+                    mut_index = np.random.choice(range(number_features))
+                    off_score[mut_index] = np.random.choice(scores)
+
+                mutated.append(list(off_order) + list(off_score))
+            return np.array(mutated)
+
+        def on_generation(ga_instance):
+            _, fit, _ = ga_instance.best_solution()
+            current_time = time.time()-start_time
+            self.data.append([ga_instance.generations_completed, fit, current_time])
+
+        self.ga_instance = pygad.GA(
+            num_generations=200,
+            num_parents_mating=5,
+            fitness_func=fitness,
+            initial_population=initialize(),
+            gene_space=feature_order * number_features + scores * number_features,
+            gene_type=[int] * number_features + [int] * number_features,
+            num_genes=2 * number_features,
+            parent_selection_type="sss",
+            keep_elitism=2,
+            crossover_type=ox,
+            mutation_type=mutate,
+            mutation_probability=0.1,
+            on_generation=on_generation,
+        )
+
+        self.ga_instance.run()
+        solution, fitness, _ = self.ga_instance.best_solution()
+        self.ga_instance.plot_fitness()
+
+        sol_order = np.array(solution[:number_features], dtype=int)
+        sol_score = np.array(solution[number_features:], dtype=int)
+
+        self.stage_clfs = []
+        for i in range(number_features + 1):
+            order_i = sol_order[:i]
+
+            sorted_scores = sol_score[order_i]
+            score_i = sorted_scores[:i]
 
             k_clf = ProbabilisticScoringSystem(
                 features=list(order_i),
@@ -442,20 +541,15 @@ if __name__ == '__main__':
     #ga_psl.fit(X, y)
 
     from sklearn.model_selection import train_test_split
-    start_time = time.time()
-    df = pd.read_csv("../../data/player_binary.csv", index_col=0) #.sample(200)
-    X = df.iloc.values
-    y = df.iloc.index.values
+    df = pd.read_csv("../../data/player_binary.csv", index_col=0).sample(200)
+    X = df.iloc[:, :-1].values
+    y = df.iloc[:].index.values
     X = MinEntropyBinarizer().fit_transform(X, y)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2, random_state=42)
 
     ga_psl = GeneticProbabilisticScoringList({-2, -1, 1, 2})
-    ga_psl.fit(X_train, y_train, crossover_ox4 = True)
-    for i in range(len(ga_psl.stage_clfs)):
-        print(i, f"Brier score: {ga_psl.score(X_test, y_test, k=i):.4f}")
-    print('sum', f"Brier score: {ga_psl.score(X_test, y_test):.4f}")
+    ga_psl.fit_ox(X_train, y_train)
 
-    feature_names = list(df.columns)
-    ins = ga_psl.inspect(k=5, feature_names=feature_names)
+    ins = ga_psl.inspect()
     print(ins.to_string(index=False, na_rep="-", justify="center", float_format=lambda x: f"{x:.2f}"))
