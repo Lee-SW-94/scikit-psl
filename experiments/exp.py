@@ -6,8 +6,17 @@ from skpsl.preprocessing import MinEntropyBinarizer
 
 if __name__ == '__main__':
     df = pd.read_csv("../data/player_binary.csv", index_col=0)
-    X = df.iloc.values
-    y = df.iloc.index.values
+    X = df.iloc[:].values
+    y = df.iloc[:].index.values
+
+    #df = pd.read_csv("../data/41945.csv", header=None, index_col=None)
+    #X = df.iloc[:, :-1]
+    #y = df.iloc[:, -1]
+
+    #df = pd.read_csv("../data/42900.csv", header=None, index_col=None)
+    #X = df.iloc[:, :-1]
+    #y = df.iloc[:, -1]
+
 
     X = MinEntropyBinarizer().fit_transform(X, y)
     classes_ = np.unique(y)
@@ -33,16 +42,26 @@ if __name__ == '__main__':
         result = list(features) + list(scores_sorted)
 
         for j in range(10):
-            ga_psl = GeneticProbabilisticScoringList({-3, -2, -1, 1, 2, 3})
-            ga_psl.fit(X_train, y_train, given_solution=result)
-            for k in range(len(ga_psl.data)):
-                time_fitness.append(['GA', i+1, j+1] + ga_psl.data[k])
-            for k in range(len(ga_psl.stage_clfs)):
-                brier.append(['GA', i+1, j+1, k, ga_psl.score(X_test, y_test, k=k)])
+            ga_psl1 = GeneticProbabilisticScoringList({-3, -2, -1, 1, 2, 3})
+            ga_psl1.fit_ox4(X_train, y_train, given_solution=None)
+            for k in range(len(ga_psl1.data)):
+                time_fitness.append(['GA_OX4', i + 1, j + 1] + ga_psl1.data[k])
+
+            for k in range(len(ga_psl1.stage_clfs)):
+                brier.append(['GA_OX4', i + 1, j + 1, k, ga_psl1.score(X_test, y_test, k=k)])
+
+        for j in range(10):
+            ga_psl2 = GeneticProbabilisticScoringList({-3, -2, -1, 1, 2, 3})
+            ga_psl2.fit_ox(X_test, y_test, given_solution=None)
+            for k in range(len(ga_psl2.data)):
+                time_fitness.append(['GA_OX', i + 1, j + 1] + ga_psl2.data[k])
+
+            for k in range(len(ga_psl2.stage_clfs)):
+                brier.append(['GA_OX', i + 1, j + 1, k, ga_psl2.score(X_test, y_test, k=k)])
 
 
     tf = pd.DataFrame(time_fitness, columns=['model', 'split', 'iteration', 'generation', 'fitness', 'time'])
-    tf.to_csv("pb_comparison_time_fit_2.csv")
+    tf.to_csv("comparison_time_fit.csv")
 
     bs = pd.DataFrame(brier, columns=['model', 'split', 'iteration', 'stage', 'score'])
-    bs.to_csv("pb_comparison_brier_2.csv")
+    bs.to_csv("comparison_brier.csv")
