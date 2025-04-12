@@ -17,7 +17,6 @@ if __name__ == '__main__':
     #X = df.iloc[:, :-1]
     #y = df.iloc[:, -1]
 
-
     X = MinEntropyBinarizer().fit_transform(X, y)
     classes_ = np.unique(y)
     y_ = np.array(y == classes_[1], dtype=int)
@@ -52,7 +51,7 @@ if __name__ == '__main__':
 
         for j in range(10):
             ga_psl2 = GeneticProbabilisticScoringList({-3, -2, -1, 1, 2, 3})
-            ga_psl2.fit_ox(X_test, y_test, given_solution=None)
+            ga_psl2.fit_ox(X_train, y_train, given_solution=None)
             for k in range(len(ga_psl2.data)):
                 time_fitness.append(['GA_OX', i + 1, j + 1] + ga_psl2.data[k])
 

@@ -12,7 +12,6 @@ from sklearn.exceptions import NotFittedError
 from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import log_loss, brier_score_loss
 
-
 from skpsl.estimators import ProbabilisticScoringList, ProbabilisticScoringSystem
 from skpsl.preprocessing import MinEntropyBinarizer
 
@@ -33,7 +32,6 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
         self.calibrator = None
         self.ga_instance = None
         self.data = []
-
 
     def fit_ox4(
         self,
@@ -94,7 +92,6 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
                 y_prob = self.predict_prob(total)
 
                 loss_value.append(log_loss(y_, y_prob[:, 1]))
-                #loss_value.append(brier_score_loss(y_, y_prob[:, 1]))
             return 1/sum(loss_value)
 
         def ox4(parents, offspring_size, ga_instance):
@@ -201,7 +198,6 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
             current_time = time.time()-start_time
             self.data.append([ga_instance.generations_completed, fit, current_time])
 
-
         self.ga_instance = pygad.GA(
             num_generations=200,
             num_parents_mating=5,
@@ -220,7 +216,6 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
 
         self.ga_instance.run()
         solution, fitness, _ = self.ga_instance.best_solution()
-        self.ga_instance.plot_fitness()
 
         sol_order = np.array(solution[:number_features], dtype=int)
         sol_score = np.array(solution[number_features:], dtype=int)
@@ -301,7 +296,6 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
                 y_prob = self.predict_prob(total)
 
                 loss_value.append(log_loss(y_, y_prob[:, 1]))
-                #loss_value.append(brier_score_loss(y_, y_prob[:, 1]))
             return 1/sum(loss_value)
 
         def ox(parents, offspring_size, ga_instance):
@@ -311,11 +305,9 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
                 order1, score1 = parents[a, :number_features].copy(), parents[a, number_features:].copy()
                 order2, score2 = parents[b, :number_features].copy(), parents[b, number_features:].copy()
 
-
                 # order-crossover (ox)
                 random_split_point = np.random.choice(range(1, number_features), size=2, replace=False)
                 random_split_point.sort()
-
 
                 off_order1 = [None]*number_features
                 off_order2 = [None]*number_features
