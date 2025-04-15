@@ -53,10 +53,10 @@ if __name__ == '__main__':
             ga_psl2 = GeneticProbabilisticScoringList({-3, -2, -1, 1, 2, 3})
             ga_psl2.fit_ox(X_train, y_train, given_solution=None)
             for k in range(len(ga_psl2.data)):
-                time_fitness.append(['GA_OX', i + 1, j + 1] + ga_psl2.data[k])
+                time_fitness.append(['GA_OX1', i + 1, j + 1] + ga_psl2.data[k])
 
             for k in range(len(ga_psl2.stage_clfs)):
-                brier.append(['GA_OX', i + 1, j + 1, k, ga_psl2.score(X_test, y_test, k=k)])
+                brier.append(['GA_OX1', i + 1, j + 1, k, ga_psl2.score(X_test, y_test, k=k)])
 
 
     tf = pd.DataFrame(time_fitness, columns=['model', 'split', 'iteration', 'generation', 'fitness', 'time'])
