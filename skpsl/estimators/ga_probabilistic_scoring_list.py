@@ -70,7 +70,6 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
             for _ in range(sol_per_pop):
                 init_feature_order = list(np.random.permutation(feature_order))
                 init_scores = list(np.random.choice(scores, size=number_features, replace=True))
-
                 init.append(init_feature_order+init_scores)
 
             return init
@@ -88,9 +87,7 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
                 if i == 0:
                     total = np.zeros((X.shape[0], 1))
                 self.calibrator = self.calibrator.fit(total, y_)
-
                 y_prob = self.predict_prob(total)
-
                 loss_value.append(log_loss(y_, y_prob[:, 1]))
             return 1/sum(loss_value)
 
@@ -274,7 +271,6 @@ class GeneticProbabilisticScoringList(ProbabilisticScoringList):
             for _ in range(sol_per_pop):
                 init_feature_order = list(np.random.permutation(feature_order))
                 init_scores = list(np.random.choice(scores, size=number_features, replace=True))
-
                 init.append(init_feature_order+init_scores)
 
             return init
